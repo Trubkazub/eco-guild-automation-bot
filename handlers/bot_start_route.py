@@ -164,8 +164,8 @@ async def choosed_autovolonteur(message: Message, state: FSMContext):
         await state.clear()
     else:
         await message.answer(text='Есть ли у вас водительские права?', reply_markup=make_keyboard_column(yes_no_buttons))
-        await state.set_state()
+        await state.set_state(UserRegistration.choosing_having_rights)
 
-@router.message(UserRegistration.choosing_having_rights, Text(text=yes_no_buttons))
-async def choosed_having_rights(message: Message, state: FSMContext):
-    
+# @router.message(UserRegistration.choosing_having_rights, Text(text=yes_no_buttons))
+# async def choosed_having_rights(message: Message, state: FSMContext):
+#
