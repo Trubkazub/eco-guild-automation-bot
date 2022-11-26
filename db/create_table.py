@@ -11,11 +11,16 @@ def create_table(cursor):
                        f'university VARCHAR(250),' \
                        f'department VARCHAR(250),' \
                        f'year_of_studying VARCHAR(32),' \
+                       f'higher_education VARCHAR(50),' \
+                       f'having_degree BOOL,' \
+                       f'science_degree VARCHAR(50),' \
                        f'phone_number VARCHAR(20),' \
                        f'email VARCHAR(50),' \
                        f'vk VARCHAR(50),' \
                        f'drivers_license BOOL,' \
-                       f'carsharing BOOL);'
+                       f'carsharing BOOL,' \
+                       f'wanna_be_carshar BOOL' \
+                       f');'
 
     cursor.execute(sql_create_table)
     print('sozdaltb')
