@@ -28,5 +28,4 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         push: true
-        file: /app/Dockerfile
         tags: boristopoev/eco_guild_bot:latest
