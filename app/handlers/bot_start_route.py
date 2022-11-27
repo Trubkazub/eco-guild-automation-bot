@@ -2,10 +2,10 @@ from aiogram import Router, types
 from aiogram.types.message import Message
 from aiogram.filters.command import Command
 from aiogram.filters.text import Text
-from keyboards.simple_row import make_row_keyboard, make_keyboard_column
+from app.keyboards.simple_row import make_row_keyboard, make_keyboard_column
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types.reply_keyboard_markup import ReplyKeyboardMarkup.
+from aiogram.types.reply_keyboard_markup import ReplyKeyboardMarkup
 
 router = Router()
 available_statuses = ['Учащийся в школе', 'Студент', 'Выпускник']
@@ -168,4 +168,4 @@ async def choosed_autovolonteur(message: Message, state: FSMContext):
 
 @router.message(UserRegistration.choosing_having_rights, Text(text=yes_no_buttons))
 async def choosed_having_rights(message: Message, state: FSMContext):
-    
+    pass
