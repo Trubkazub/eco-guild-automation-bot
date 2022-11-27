@@ -27,7 +27,6 @@ def create_table(cursor):
 
     schoolkid_info = f'CREATE TABLE IF NOT EXISTS schoolkid_info (' \
                      f'user_id VARCHAR(32) UNIQUE PRIMARY KEY,' \
-                     f'username VARCHAR (50) UNIQUE NOT NULL,' \
                      f'status VARCHAR (20) NOT NULL,' \
                      f'school VARCHAR (250),' \
                      f'grade INT,' \
@@ -39,7 +38,6 @@ def create_table(cursor):
 
     students_info = f'CREATE TABLE IF NOT EXISTS student_info (' \
                     f'user_id VARCHAR(32) UNIQUE PRIMARY KEY,' \
-                    f'username VARCHAR (50) UNIQUE NOT NULL,' \
                     f'status VARCHAR (20) NOT NULL,' \
                     f'university VARCHAR (250),' \
                     f'department VARCHAR (250),' \
