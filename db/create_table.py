@@ -10,46 +10,49 @@ PORT = config['PORT']
 DATABASE = config['DATABASE']
 
 def create_table(cursor):
-    users_simple_info = f'CREATE TABLE IF NOT EXISTS users_simple_info (' \
-                        f'user_id VARCHAR(32) UNIQUE PRIMARY KEY,' \
-                        f'username VARCHAR (50) UNIQUE NOT NULL,' \
-                        f'first_name VARCHAR (32),' \
-                        f'patronymic VARCHAR (32),' \
-                        f'surname VARCHAR (32),' \
-                        f'status VARCHAR (20) NOT NULL,' \
-                        f'phone_number VARCHAR (20),' \
-                        f'email VARCHAR (50),' \
-                        f'vk VARCHAR (50),' \
-                        f'drivers_license BOOL DEFAULT False,' \
-                        f'carsharing BOOL DEFAULT False,' \
-                        f'wanna_be_carshar BOOL DEFAULT False' \
-                        f');'
+    users_simple_info = """
+                        CREATE TABLE IF NOT EXISTS users_simple_info (
+                            user_id VARCHAR(32) UNIQUE PRIMARY KEY,
+                            username VARCHAR (50) UNIQUE NOT NULL,
+                            first_name VARCHAR (32),
+                            patronymic VARCHAR (32),
+                            surname VARCHAR (32),
+                            status VARCHAR (20) NOT NULL,
+                            phone_number VARCHAR (20),
+                            email VARCHAR (50),
+                            vk VARCHAR (50),
+                            drivers_license BOOL DEFAULT False,
+                            carsharing BOOL DEFAULT False,
+                            wanna_be_carshar BOOL DEFAULT False
+                        );"""
 
-    schoolkid_info = f'CREATE TABLE IF NOT EXISTS schoolkid_info (' \
-                     f'user_id VARCHAR(32) UNIQUE PRIMARY KEY,' \
-                     f'status VARCHAR (20) NOT NULL,' \
-                     f'school VARCHAR (250),' \
-                     f'grade INT,' \
-                     f'CONSTRAINT fk_user_id' \
-                     f'     FOREIGN KEY (user_id)' \
-                     f'          REFERENCES users_simple_info(user_id)' \
-                     f'          ON DELETE CASCADE ON UPDATE CASCADE' \
-                     f');'
+    schoolkid_info = """
+                     CREATE TABLE IF NOT EXISTS schoolkid_info (
+                         user_id VARCHAR(32) UNIQUE PRIMARY KEY,
+                         status VARCHAR (20) NOT NULL,
+                         school VARCHAR (250),
+                         grade INT,
+                         CONSTRAINT fk_user_id
+                              FOREIGN KEY (user_id)
+                                   REFERENCES users_simple_info(user_id)
+                                   ON DELETE CASCADE ON UPDATE CASCADE
+                     );"""
 
-    students_info = f'CREATE TABLE IF NOT EXISTS student_info (' \
-                    f'user_id VARCHAR(32) UNIQUE PRIMARY KEY,' \
-                    f'status VARCHAR (20) NOT NULL,' \
-                    f'university VARCHAR (250),' \
-                    f'department VARCHAR (250),' \
-                    f'year_of_studying VARCHAR (32),' \
-                    f'higher_education VARCHAR (50),' \
-                    f'having_degree BOOL,' \
-                    f'science_degree VARCHAR (50),' \
-                    f'CONSTRAINT fk_user_id' \
-                    f'   FOREIGN KEY (user_id) ' \
-                    f'       REFERENCES users_simple_info (user_id)' \
-                    f'       ON DELETE CASCADE ON UPDATE CASCADE' \
-                    f');'
+    students_info = """
+                    CREATE TABLE IF NOT EXISTS student_info (
+                        user_id VARCHAR(32) UNIQUE PRIMARY KEY,
+                        status VARCHAR (20) NOT NULL,
+                        university VARCHAR (250),
+                        department VARCHAR (250),
+                        year_of_studying VARCHAR (32),
+                        higher_education VARCHAR (50),
+                        having_degree BOOL,
+                        science_degree VARCHAR (50),
+                        CONSTRAINT fk_user_id
+                           FOREIGN KEY (user_id) 
+                               REFERENCES users_simple_info (user_id)
+                               ON DELETE CASCADE ON UPDATE CASCADE
+                    );"""
 
     for sql_create_table in [users_simple_info, schoolkid_info, students_info]:
         cursor.execute(sql_create_table)
