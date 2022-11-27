@@ -2,7 +2,7 @@ from aiogram import Router, types
 from aiogram.types.message import Message
 from aiogram.filters.command import Command
 from aiogram.filters.text import Text
-from app.keyboards.simple_row import make_row_keyboard, make_keyboard_column
+from keyboards.simple_row import make_row_keyboard, make_keyboard_column
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types.reply_keyboard_markup import ReplyKeyboardMarkup

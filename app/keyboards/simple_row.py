@@ -10,6 +10,7 @@ def make_row_keyboard(items: list[str]) -> ReplyKeyboardMarkup:
     row = [KeyboardButton(text=item) for item in items]
     return ReplyKeyboardMarkup(keyboard=[row], resize_keyboard=True)
 
+
 def make_keyboard_column(items: list[str]) -> ReplyKeyboardMarkup:
     column = [[KeyboardButton(text=item)] for item in items]
     return ReplyKeyboardMarkup(keyboard=column, resize_keyboard=True)
