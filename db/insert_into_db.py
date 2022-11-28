@@ -1,8 +1,7 @@
 import psycopg2
 from dotenv import dotenv_values
-from psycopg2 import Error
+from psycopg2 import Error, sql
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-
 config = dotenv_values(".env")
 
 
@@ -38,55 +37,24 @@ class Inserter:
         self.data_ = data_
         self.cursor = cursor
 
-    def insert_into_simple_info(self):
-        sql_insert_simple_info = """
-            INSERT INTO users_simple_info 
-                (user_id, username, first_name, patronymic, surname,
-                status, phone_number, email, vk, drivers_license,
-                carsharing, wanna_be_carshar )
-                VALUES %s
-            ON CONFLICT (user_id) DO NOTHING;
-        """
-        keys = ('user_id', 'username', 'first_name', 'patronymic', 'surname',
-                'status', 'phone_number', 'email', 'vk', 'drivers_license',
-                'carsharing', 'wanna_be_carshar')
+    def inserter(self, table):
+        self.cursor.execute("Select * FROM {} LIMIT 0".format(table))
+        colnames = [desc[0] for desc in self.cursor.description]
+        info = tuple(str(self.data_[key]) for key in colnames)
 
-        info = tuple(str(self.data_[key]) for key in keys)
-        self.cursor.execute(sql_insert_simple_info, (info,))
+        self.cursor.execute(
+            sql.SQL('INSERT INTO {} VALUES %s ON CONFLICT (user_id) DO NOTHING').format(sql.Identifier(table)), (info,)
+        )
 
-    def insert_into_students_table(self):
-        sql_insert_student_info = """
-            INSERT INTO student_info
-                (user_id, status, university, department, year_of_studying,
-                higher_education, having_degree, science_degree)
-                VALUES %s
-            ON CONFLICT (user_id) DO NOTHING;
-        """
-        keys = ('user_id', 'status', 'university', 'department', 'year_of_studying',
-                'higher_education', 'having_degree', 'science_degree')
-        info = tuple(self.data_[key] for key in keys)
-        self.cursor.execute(sql_insert_student_info, (info,))
-
-    def insert_into_schoolkid_info(self):
-        sql_insert_schoolkid_info = """
-            INSERT INTO schoolkid_info 
-                user_id, status, school, grade
-                VALUES %s
-            ON CONFLICT (user_id) DO NOTHING;
-        """
-        keys = ('user_id', 'status', 'school', 'grade')
-        info = tuple(self.data_[key] for key in keys)
-        self.cursor.execute(sql_insert_schoolkid_info, (info,))
-
-    def inserterv2(self):
-        self.insert_into_simple_info()
+    def choose_table(self):
+        self.inserter('users_simple_info')
         if self.data_['status'] == 'student':
-            self.insert_into_students_table()
+            self.inserter('student_info')
         else:
-            self.insert_into_schoolkid_info()
+            self.inserter('schoolkid_info')
 
 
 with Connect(config) as conn:
     cur = conn.cursor()
-    user = Inserter(union_dict, cur)
-    user.inserterv2()
+    user = Inserter(data, cur)
+    user.choose_table()
