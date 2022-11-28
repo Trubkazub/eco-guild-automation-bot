@@ -2,6 +2,7 @@ import psycopg2
 from dotenv import dotenv_values
 from psycopg2 import Error, sql
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+
 config = dotenv_values(".env")
 
 
@@ -54,10 +55,12 @@ class Inserter:
             self.inserter('schoolkid_info')
 
 
-
-
-if __name__ == '__main__':
+def main(data):
     with Connect(config) as conn:
         cur = conn.cursor()
         user = Inserter(data, cur)
         user.choose_table()
+
+
+if __name__ == '__main__':
+    main(data)
