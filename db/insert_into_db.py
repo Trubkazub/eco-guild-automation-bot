@@ -54,7 +54,10 @@ class Inserter:
             self.inserter('schoolkid_info')
 
 
-with Connect(config) as conn:
-    cur = conn.cursor()
-    user = Inserter(data, cur)
-    user.choose_table()
+
+
+if __name__ == '__main__':
+    with Connect(config) as conn:
+        cur = conn.cursor()
+        user = Inserter(data, cur)
+        user.choose_table()
