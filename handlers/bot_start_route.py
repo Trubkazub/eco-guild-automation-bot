@@ -5,7 +5,6 @@ from aiogram.filters.text import Text
 from keyboards.simple_row import make_row_keyboard, make_keyboard_column
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types.reply_keyboard_markup import ReplyKeyboardMarkup.
 
 router = Router()
 available_statuses = ['Учащийся в школе', 'Студент', 'Выпускник']
