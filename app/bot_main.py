@@ -6,10 +6,13 @@ import handlers.bot_start_route
 
 load_dotenv()
 
-
+dp: Dispatcher = Dispatcher()
+bot: Bot = Bot(token=os.getenv('BOT_TOKEN'))
 
 
 async def main():
+    global bot
+    global dp
     bot = Bot(token=os.getenv('BOT_TOKEN'))
     dp = Dispatcher()
     dp.include_router(handlers.bot_start_route.router)
