@@ -1,5 +1,5 @@
 import asyncio
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 import os
 import handlers.bot_start_route
