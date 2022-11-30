@@ -4,7 +4,7 @@ from aiogram.types.callback_query import CallbackQuery
 from aiogram.filters.command import Command
 from aiogram.filters.text import Text
 from app.keyboards.keyboard_functions import make_row_keyboard, make_keyboard_column, phone_request_keyboard
-from app.keyboards.inline_keyboard_functions import make_inline_column_keyboard
+from app.keyboards.inline_keyboard_functions import make_inline_column_keyboard, make_inline_keyboard
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from app.bot_main import bot, dp
@@ -113,7 +113,7 @@ async def middlename_entered(message: Message, state: FSMContext):
 
 @router.callback_query(UserRegistration.choosing_status)
 async def choosed_status(callback_query: CallbackQuery, state: FSMContext):
-    await state.update_data(status=callback_query.data.lower())
+    await state.update_data(status=available_statuses[int(callback_query.data)])
     await bot.answer_callback_query(callback_query.id)
     if callback_query.data == '0':
         await callback_query.message.edit_reply_markup()
@@ -138,13 +138,13 @@ async def entered_school(message: Message, state: FSMContext):
 
 @router.callback_query(UserRegistration.choosing_vuz)
 async def choosed_vuz(callback_query: CallbackQuery, state: FSMContext):
-    await callback_query.message.edit_reply_markup()
     if callback_query.data == '0':
         await state.update_data(vuz=available_vuzes[int(callback_query.data)].lower())
         await callback_query.message.edit_text('Факультет')
-        await callback_query.message.edit_reply_markup(make_inline_column_keyboard(available_fakultets))
+        await callback_query.message.edit_reply_markup(make_inline_keyboard(available_fakultets, 2))
         await state.set_state(UserRegistration.choosing_fakultet)
     else:
+        await callback_query.message.edit_reply_markup()
         await callback_query.message.answer(text='Какой именно?', reply_markup=None)
         await state.set_state(UserRegistration.entering_vuz)
 
