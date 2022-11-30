@@ -9,6 +9,6 @@ from app.handlers.callback import BaseCallbackData
 #     return InlineKeyboardMarkup(inline_keyboard=result_list)
 
 
-def make_inline_column_keyboard(items: list[str], Callback_type:BaseCallbackData = BaseCallbackData) -> InlineKeyboardMarkup:
-    result_list = [[InlineKeyboardButton(text=i, callback_data=Callback_type(text=i).pack())] for i in items]
+def make_inline_column_keyboard(items: list[str]) -> InlineKeyboardMarkup:
+    result_list = [[InlineKeyboardButton(text=i, callback_data=items.index(i))] for i in items]
     return InlineKeyboardMarkup(inline_keyboard=result_list)
