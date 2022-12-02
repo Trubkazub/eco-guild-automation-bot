@@ -1,23 +1,22 @@
-from aiogram import Router, types, F
-from aiogram.types.message import Message
-from aiogram.types.callback_query import CallbackQuery
+from distutils.util import strtobool
+
+from aiogram.utils.markdown import hlink
+from aiogram import Router, types
 from aiogram.filters.command import Command
 from aiogram.filters.text import Text
-from app.keyboards.keyboard_functions import make_row_keyboard, make_keyboard_column, phone_request_keyboard
-from app.keyboards.inline_keyboard_functions import make_inline_keyboard, yes_no_inline_keyboard
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from app.bot_main import bot, dp
+from aiogram.types.callback_query import CallbackQuery
+from aiogram.types.message import Message
+
+from app.bot_main import bot
 from app.handlers.filters import ContactFilter
-from distutils.util import strtobool
-from aiogram.filters import Filter
-from aiogram.filters.callback_data import CallbackData, CallbackQueryFilter
-from app.handlers.callback import StatusCallbackData
+from app.keyboards.inline_keyboard_functions import make_inline_keyboard, yes_no_inline_keyboard
+from app.keyboards.keyboard_functions import phone_request_keyboard
 
 router = Router()
 available_statuses = ['Учащийся в школе', 'Студент/Аспирант', 'Выпускник']
 available_vuzes = ['МГУ', 'Другой']
-yes_no_buttons = ['Да', 'Нет']
 available_fakultets = ['Биологический факультет', 'Биотехнологический факультет', 'Высшая школа бизнеса',
                        'Высшая школа государственного администрирования', 'Высшая школа государственного аудита',
                        'Высшая школа инновационного бизнеса',
@@ -65,6 +64,7 @@ class UserRegistration(StatesGroup):
     choosing_having_rights = State()
     choosing_having_car = State()
     choosing_using_carsharing = State()
+    accept_confidential = State()
     finished = State()
 
 
@@ -198,8 +198,9 @@ async def choosed_science_degree(callback_query: CallbackQuery, state: FSMContex
         await state.set_state(UserRegistration.entering_science_degree)
     else:
         await callback_query.message.answer('Телефон (используем его крайне редко, но иногда всё же важна возможность '
-                             'оперативной связи с волонтёром): ', reply_markup=phone_request_keyboard())
+                                            'оперативной связи с волонтёром): ', reply_markup=phone_request_keyboard())
         await state.set_state(UserRegistration.entering_phone)
+
 
 @router.message(UserRegistration.entering_science_degree)
 async def entered_science_degree(message: Message, state: FSMContext):
@@ -232,7 +233,8 @@ async def skipped_phone(message: Message, state: FSMContext):
 
 @router.message(UserRegistration.entering_phone)
 async def wrong_phone_answer(message: Message, state: FSMContext):
-    await message.answer('Выберите вариант из списка')
+    await message.answer('Выберите вариант из списка', reply_markup=None)
+
 
 @router.message(UserRegistration.entering_email)
 async def entered_phone(message: Message, state: FSMContext):
@@ -244,20 +246,73 @@ async def entered_phone(message: Message, state: FSMContext):
 @router.message(UserRegistration.entering_vk)
 async def entered_phone(message: Message, state: FSMContext):
     await state.update_data(vk=message.text)
-    await message.answer(
-        text='Можете ли вы стать потенциальным автоволонтёром? (если нас будет много, то волонтёрить придётся не больше раза в год!!!',
-        reply_markup=make_keyboard_column(yes_no_buttons))
-    await state.set_state(UserRegistration.choosing_autovolonteur)
-
-
-@router.message(UserRegistration.choosing_autovolonteur, Text(text=yes_no_buttons))
-async def choosed_autovolonteur(message: Message, state: FSMContext):
-    await state.update_data(autovolonteur=message.text)
     state_data = await state.get_data()
-    if state_data['status'] == available_statuses[0]:
-        await message.answer('Спасибо. Регистрация завершена')
-        await state.clear()
+    if state_data['status'] == available_statuses[0].lower():
+        await message.answer(
+            'Согласиться с нашей ' + hlink('политикой конфиденциальности', 'https://docs.google.com/document/d'
+                                                                           '/1zcfX5KnB97az41Sq4NeioCwp'
+                                                                           '-XAH5SC1oOjdxSwNRaA/edit') + '?',
+            parse_mode='HTML', reply_markup=make_inline_keyboard(['Да']))
+        await state.set_state(UserRegistration.accept_confidential)
     else:
-        await message.answer(text='Есть ли у вас водительские права?',
-                             reply_markup=make_keyboard_column(yes_no_buttons))
-        await state.set_state(UserRegistration.choosing_having_rights)
+        await message.answer(
+            text='Далее пойдут вопросы о том, можете ли вы стать потенциальным автоволонтёром (если наберётся '
+                 'достаточно '
+                 'человек, волонтёрить придётся не больше раза в год!) Затраты на бензин или каршеринг мы возмещаем',
+            reply_markup=make_inline_keyboard(['Хорошо']))
+        await state.set_state(UserRegistration.choosing_autovolonteur)
+
+
+@router.callback_query(UserRegistration.choosing_autovolonteur)
+async def choosed_autovolonteur(callback_query: CallbackQuery, state: FSMContext):
+    state_data = await state.get_data()
+    await callback_query.message.edit_text('Есть права? Достаточно стандартных прав на легковую машину, категории B')
+    await callback_query.message.edit_reply_markup(yes_no_inline_keyboard())
+    await state.set_state(UserRegistration.choosing_having_rights)
+
+
+@router.callback_query(UserRegistration.choosing_having_rights)
+async def choosed_having_rights(callback_query: CallbackQuery, state: FSMContext):
+    having_rights = strtobool(callback_query.data)
+    await state.update_data(having_rights=having_rights)
+    if having_rights:
+        await callback_query.message.edit_text('Есть своя машина?')
+        await callback_query.message.edit_reply_markup(yes_no_inline_keyboard())
+        await state.set_state(UserRegistration.choosing_having_car)
+    else:
+        await callback_query.message.edit_text(
+            'Согласиться с нашей ' + hlink('политикой конфиденциальности', 'https://docs.google.com/document/d/1zcfX5KnB97az41Sq4NeioCwp-XAH5SC1oOjdxSwNRaA/edit') + '?', parse_mode='HTML')
+        await callback_query.message.edit_reply_markup(make_inline_keyboard(['Да']))
+        await state.set_state(UserRegistration.accept_confidential)
+
+
+@router.callback_query(UserRegistration.choosing_having_car)
+async def choosed_having_car(callback_query: CallbackQuery, state: FSMContext):
+    having_car = strtobool(callback_query.data)
+    await state.update_data(having_car=having_car)
+    await callback_query.message.edit_text('Можете ли вы быть автоволонтёром на каршеринге?')
+    await callback_query.message.edit_reply_markup(yes_no_inline_keyboard())
+    await state.set_state(UserRegistration.choosing_using_carsharing)
+
+
+@router.callback_query(UserRegistration.choosing_using_carsharing)
+async def choosed_using_carsharing(callback_query: CallbackQuery, state: FSMContext):
+    using_carsharing = strtobool(callback_query.data)
+    await state.update_data(using_carsharing=using_carsharing)
+    await callback_query.message.edit_text(
+            'Согласиться с нашей ' + hlink('политикой конфиденциальности', 'https://docs.google.com/document/d/1zcfX5KnB97az41Sq4NeioCwp-XAH5SC1oOjdxSwNRaA/edit') + '?', parse_mode='HTML')
+    await callback_query.message.edit_reply_markup(make_inline_keyboard(['Да']))
+    await state.set_state(UserRegistration.accept_confidential)
+
+
+@router.callback_query(UserRegistration.accept_confidential)
+async def accepted_confidentional(callback_query: CallbackQuery, state: FSMContext):
+    await callback_query.message.edit_text('Благодарим Вас за уделённое время! Профиль был успешно зарегистрирован!')
+    await callback_query.message.edit_reply_markup(make_inline_keyboard(['Отлично']))
+    await state.set_state(UserRegistration.finished)
+
+
+@router.callback_query(UserRegistration.finished)
+async def finished(callback_query: CallbackQuery, state: FSMContext):
+    await callback_query.message.delete()
+    await state.clear()
