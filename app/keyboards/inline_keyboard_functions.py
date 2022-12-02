@@ -14,7 +14,7 @@ def make_inline_column_keyboard(items: list[str]) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=result_list)
 
 def make_inline_keyboard(items: list[str], columns:int = 1) -> InlineKeyboardMarkup:
-    counter = 0
+    counter = 1
     temp_list = []
     result_list = []
     for i in items:
@@ -22,8 +22,12 @@ def make_inline_keyboard(items: list[str], columns:int = 1) -> InlineKeyboardMar
             temp_list.append(InlineKeyboardButton(text=i, callback_data=items.index(i)))
             counter += 1
         else:
-            result_list.append(temp_list.copy().deepcopy())
             temp_list = [InlineKeyboardButton(text=i, callback_data=items.index(i))]
+            result_list.append(temp_list.copy())
             counter = 1
     return InlineKeyboardMarkup(inline_keyboard=result_list)
 
+def yes_no_inline_keyboard() -> InlineKeyboardMarkup:
+    yes_button = InlineKeyboardButton(text='Да', callback_data='true')
+    no_button = InlineKeyboardButton(text='Нет', callback_data='false')
+    return InlineKeyboardMarkup(inline_keyboard=[[yes_button, no_button]])

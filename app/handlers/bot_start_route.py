@@ -4,10 +4,13 @@ from aiogram.types.callback_query import CallbackQuery
 from aiogram.filters.command import Command
 from aiogram.filters.text import Text
 from app.keyboards.keyboard_functions import make_row_keyboard, make_keyboard_column, phone_request_keyboard
-from app.keyboards.inline_keyboard_functions import make_inline_column_keyboard, make_inline_keyboard
+from app.keyboards.inline_keyboard_functions import make_inline_keyboard, yes_no_inline_keyboard
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from app.bot_main import bot, dp
+from app.handlers.filters import ContactFilter
+from distutils.util import strtobool
+from aiogram.filters import Filter
 from aiogram.filters.callback_data import CallbackData, CallbackQueryFilter
 from app.handlers.callback import StatusCallbackData
 
@@ -39,6 +42,7 @@ available_years = ['I курс бакалавриата', 'II курс бака�
 
 degree_stages = ['Бакалавриата', 'Магистратура', 'Специалитет', 'Аспирантура', 'Докторантура']
 
+
 class UserRegistration(StatesGroup):
     entering_name = State()
     entering_surname = State()
@@ -64,8 +68,6 @@ class UserRegistration(StatesGroup):
     finished = State()
 
 
-
-
 @router.message(Command(commands=['start']))
 async def cmd_start(message: types.Message, state: FSMContext):
     await message.answer('Привет! Рады приветствовать тебя в ЭкоГильдии!')
@@ -83,13 +85,6 @@ async def name_entered(message: Message, state: FSMContext):
     await state.set_state(UserRegistration.entering_surname)
 
 
-# @router.message(UserRegistration.entering_surname, Text(text='Назад'))
-# async def surname_back(message: Message, state: FSMContext):
-#     await state.update_data(name='')
-#     await message.answer('Имя')
-#     await state.set_state(UserRegistration.entering_name)
-
-
 @router.message(UserRegistration.entering_surname)
 async def surname_entered(message: Message, state: FSMContext):
     await state.update_data(surname=message.text.lower())
@@ -97,23 +92,16 @@ async def surname_entered(message: Message, state: FSMContext):
     await state.set_state(UserRegistration.entering_middlename)
 
 
-# @router.message(UserRegistration.entering_middlename, Text(text='Назад'))
-# async def middlename_back(message: Message, state: FSMContext):
-#     await state.update_data(name='')
-#     await message.answer('Введите фамилию')
-#     await state.set_state(UserRegistration.entering_surname)
-
-
 @router.message(UserRegistration.entering_middlename)
 async def middlename_entered(message: Message, state: FSMContext):
     await state.update_data(middlname=message.text.lower())
-    await message.answer(text='Статус', reply_markup=make_inline_column_keyboard(available_statuses))
+    await message.answer(text='Статус', reply_markup=make_inline_keyboard(available_statuses))
     await state.set_state(UserRegistration.choosing_status)
 
 
 @router.callback_query(UserRegistration.choosing_status)
 async def choosed_status(callback_query: CallbackQuery, state: FSMContext):
-    await state.update_data(status=available_statuses[int(callback_query.data)])
+    await state.update_data(status=available_statuses[int(callback_query.data)].lower())
     await bot.answer_callback_query(callback_query.id)
     if callback_query.data == '0':
         await callback_query.message.edit_reply_markup()
@@ -121,18 +109,21 @@ async def choosed_status(callback_query: CallbackQuery, state: FSMContext):
         await state.set_state(UserRegistration.entering_school)
     else:
         await callback_query.message.edit_text('ВУЗ')
-        await callback_query.message.edit_reply_markup(make_inline_column_keyboard(available_vuzes))
+        await callback_query.message.edit_reply_markup(make_inline_keyboard(available_vuzes))
         await state.set_state(UserRegistration.choosing_vuz)
 
-
-# @router.message(UserRegistration.choosing_status)
-# async def choosed_wrong_status(message: Message, state: FSMContext):
-#     await message.answer('Пожалуйста, выберите статус из списка')
 
 @router.message(UserRegistration.entering_school)
 async def entered_school(message: Message, state: FSMContext):
     await state.update_data(school=message.text.lower())
     await message.answer(text='Класс обучения', reply_markup=None)
+    await state.set_state(UserRegistration.entering_class)
+
+
+@router.message(UserRegistration.entering_class)
+async def entered_class(message: Message, state: FSMContext):
+    await state.update_data(clas=message.text.lower())
+    await message.answer(text='Телефон', reply_markup=phone_request_keyboard())
     await state.set_state(UserRegistration.entering_phone)
 
 
@@ -141,7 +132,7 @@ async def choosed_vuz(callback_query: CallbackQuery, state: FSMContext):
     if callback_query.data == '0':
         await state.update_data(vuz=available_vuzes[int(callback_query.data)].lower())
         await callback_query.message.edit_text('Факультет')
-        await callback_query.message.edit_reply_markup(make_inline_keyboard(available_fakultets, 2))
+        await callback_query.message.edit_reply_markup(make_inline_keyboard(available_fakultets))
         await state.set_state(UserRegistration.choosing_fakultet)
     else:
         await callback_query.message.edit_reply_markup()
@@ -156,46 +147,92 @@ async def entered_vuz(message: Message, state: FSMContext):
     await state.set_state(UserRegistration.entering_fakultet)
 
 
-@router.callback_query(UserRegistration.choosing_fakultet, Text(text=available_fakultets))
+@router.message(UserRegistration.entering_fakultet)
+async def entered_fakultet(message: Message, state: FSMContext):
+    await state.update_data(fakultet=message.text.lower())
+    state_data = await state.get_data()
+    if state_data['status'] == available_statuses[2].lower():
+        await message.answer(text='Максимально полученная ступень высшего образования:',
+                             reply_markup=make_inline_keyboard(degree_stages))
+        await state.set_state(UserRegistration.choosing_max_grade)
+    else:
+        await message.answer(text='Статус:', reply_markup=make_inline_keyboard(available_years))
+        await state.set_state(UserRegistration.choosing_year)
+
+
+@router.callback_query(UserRegistration.choosing_fakultet)
 async def choosed_fakultet(callback_query: CallbackQuery, state: FSMContext):
-    await state.update_data(fakultet=callback_query.data.lower())
-    state_data = state.get_data()
+    await state.update_data(fakultet=available_fakultets[int(callback_query.data)])
+    state_data = await state.get_data()
     if state_data['status'] == available_statuses[2].lower():
         await callback_query.message.edit_text('Максимально полученная ступень высшего образования:')
-        await callback_query.message.edit_reply_markup(make_inline_column_keyboard(degree_stages))
+        await callback_query.message.edit_reply_markup(make_inline_keyboard(degree_stages))
         await state.set_state(UserRegistration.choosing_max_grade)
+    else:
+        await callback_query.message.edit_text('Статус:')
+        await callback_query.message.edit_reply_markup(make_inline_keyboard(available_years))
+        await state.set_state(UserRegistration.choosing_year)
 
 
-# @router.message(UserRegistration.choosing_fakultet)
-# async def choosed_wrong_fakultet(message: Message, state: FSMContext):
-#     await message.answer('Пожалуйста выберите факультет из списка')
+@router.callback_query(UserRegistration.choosing_max_grade)
+async def choosed_max_degree(callback_query: CallbackQuery, state: FSMContext):
+    stage = degree_stages[int(callback_query.data)]
+    await state.update_data(max_degree=stage.lower())
+    if degree_stages.index(stage) >= 3:
+        await callback_query.message.edit_text('Есть научная степень?')
+        await callback_query.message.edit_reply_markup(yes_no_inline_keyboard())
+        await state.set_state(UserRegistration.choosing_science_degree)
+    else:
+        await callback_query.message.answer(
+            text='Телефон (используем его крайне редко, но иногда всё же важна возможность '
+                 'оперативной связи с волонтёром):', reply_markup=phone_request_keyboard())
+        await state.set_state(UserRegistration.entering_phone)
 
 
-@router.message(UserRegistration.choosing_year, Text(text=available_years))
-async def choosed_year(message: Message, state: FSMContext):
-    await state.update_data(year=message.text)
-    await message.answer('Введите номер телефона')
+@router.callback_query(UserRegistration.choosing_science_degree)
+async def choosed_science_degree(callback_query: CallbackQuery, state: FSMContext):
+    science_degree = strtobool(callback_query.data)
+    await callback_query.message.edit_reply_markup()
+    if science_degree:
+        await callback_query.message.edit_text('Укажите, пожалуйста, вашу научную степень')
+        await state.set_state(UserRegistration.entering_science_degree)
+    else:
+        await callback_query.message.answer('Телефон (используем его крайне редко, но иногда всё же важна возможность '
+                             'оперативной связи с волонтёром): ', reply_markup=phone_request_keyboard())
+        await state.set_state(UserRegistration.entering_phone)
+
+@router.message(UserRegistration.entering_science_degree)
+async def entered_science_degree(message: Message, state: FSMContext):
+    await state.update_data(science_degree=message.text)
+    await message.answer('Телефон (используем его крайне редко, но иногда всё же важна возможность '
+                         'оперативной связи с волонтёром): ', reply_markup=phone_request_keyboard())
     await state.set_state(UserRegistration.entering_phone)
 
 
-@router.message(UserRegistration.choosing_year)
-async def choosed_wrong_year(message: Message, state: FSMContext):
-    await message.answer('Пожалуйста выберите год обучения из списка')
+@router.callback_query(UserRegistration.choosing_year)
+async def choosed_year(callback_query: CallbackQuery, state: FSMContext):
+    await state.update_data(year=available_years[int(callback_query.data)])
+    await callback_query.message.answer('Телефон (используем его крайне редко, но иногда всё же важна возможность '
+                                        'оперативной связи с волонтёром): ', reply_markup=phone_request_keyboard())
+    await state.set_state(UserRegistration.entering_phone)
 
 
-@router.message(UserRegistration.entering_phone)
+@router.message(UserRegistration.entering_phone, ContactFilter())
 async def entered_phone(message: Message, state: FSMContext):
-    await state.update_data(phone_number=message.text)
+    await state.update_data(phone_number=message.contact.phone_number)
     await message.answer('Введите электронную почту')
     await state.set_state(UserRegistration.entering_email)
 
 
-@router.message(UserRegistration.entering_email)
-async def entered_phone(message: Message, state: FSMContext):
-    await state.update_data(email=message.text)
-    await message.answer('Введите ссылку на профиль ВК')
-    await state.set_state(UserRegistration.entering_vk)
+@router.message(UserRegistration.entering_phone, Text(text='Пропустить'))
+async def skipped_phone(message: Message, state: FSMContext):
+    await message.answer('Введите электронную почту')
+    await state.set_state(UserRegistration.entering_email)
 
+
+@router.message(UserRegistration.entering_phone)
+async def wrong_phone_answer(message: Message, state: FSMContext):
+    await message.answer('Выберите вариант из списка')
 
 @router.message(UserRegistration.entering_email)
 async def entered_phone(message: Message, state: FSMContext):
@@ -224,7 +261,3 @@ async def choosed_autovolonteur(message: Message, state: FSMContext):
         await message.answer(text='Есть ли у вас водительские права?',
                              reply_markup=make_keyboard_column(yes_no_buttons))
         await state.set_state(UserRegistration.choosing_having_rights)
-
-# @router.message(UserRegistration.choosing_having_rights, Text(text=yes_no_buttons))
-# async def choosed_having_rights(message: Message, state: FSMContext):
-#
