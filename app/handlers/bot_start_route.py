@@ -104,8 +104,8 @@ class Step:
             await bot.answer_callback_query(self.callback_query.id)
             if self.chosen_answer:
                 await self.callback_query.message.edit_reply_markup()
-                await self.callback_query.message.edit_text(f'{self.callback_query.message.text}\n\n— '
-                                                            f'{self.chosen_answer}')
+                await self.callback_query.message.edit_text(f'{self.callback_query.message.html_text}\n\n— '
+                                                            f'{self.chosen_answer}', parse_mode='HTML')
             self.message = self.callback_query.message
         if self.data:
             await self.state.update_data(**self.data)
@@ -309,7 +309,7 @@ async def skipped_phone(message: Message, state: FSMContext):
 
 @router.message(UserRegistration.entering_phone)
 async def wrong_phone_answer(message: Message, state: FSMContext):
-    await message.answer('Выберите вариант из списка', reply_markup=phone_request_keyboard())
+    await message.answer('Пожалуйста, выберите вариант из списка ниже', reply_markup=phone_request_keyboard())
 
 
 @router.message(UserRegistration.entering_email)
@@ -318,7 +318,7 @@ async def entered_phone(message: Message, state: FSMContext):
     try:
         validation = validate_email(email, check_deliverability=True)
     except EmailNotValidError:
-        await message.answer('Введите корректный e-mail')
+        await message.answer('Пожалуйста, введите корректный e-mail')
     else:
         step = Step(message=message, state=state, data={'email': validation.email},
                     next_state=UserRegistration.entering_vk,
@@ -332,7 +332,7 @@ async def entered_phone(message: Message, state: FSMContext):
     try:
         vk.validate_url()
     except VkLinkException:
-        await message.answer('Введите корректную ссылку на профиль вк')
+        await message.answer('Пожалуйста, ведите корректную ссылку на профиль ВК, начинающуюся с https://vk.com/')
     else:
         vk = vk.url
         state_data = await state.get_data()
@@ -363,7 +363,6 @@ async def choosed_autovolonteur(callback_query: CallbackQuery, state: FSMContext
 @router.callback_query(UserRegistration.choosing_having_rights)
 async def choosed_having_rights(callback_query: CallbackQuery, state: FSMContext):
     having_rights = strtobool(callback_query.data)
-    await state.update_data(having_rights=having_rights)
     if having_rights:
         step = Step(callback_query=callback_query, state=state, data={'having_rights': having_rights},
                     chosen_answer=bool_to_str(having_rights), reply_markup=yes_no_inline_keyboard(),
@@ -371,7 +370,7 @@ async def choosed_having_rights(callback_query: CallbackQuery, state: FSMContext
     else:
         step = Step(callback_query=callback_query, state=state, data={'having_rights': having_rights},
                     chosen_answer=bool_to_str(having_rights), reply_markup=make_inline_keyboard(['Да']),
-                    parse_mode='HTML',
+                    parse_mode='HTML', next_state=UserRegistration.accept_confidential,
                     next_message='Согласиться с нашей '
                                  + hlink('политикой конфиденциальности',
                                          'https://docs.google.com/document/d/1zcfX5KnB97az41Sq4NeioCwp-XAH5SC1oOjdxSwNRaA/edit')
@@ -414,5 +413,5 @@ async def accepted_confidentional(callback_query: CallbackQuery, state: FSMConte
 async def finished(callback_query: CallbackQuery, state: FSMContext):
     await callback_query.message.edit_reply_markup()
     await callback_query.message.edit_text('Благодарим вас за уделённое время! Профиль был успешно '
-                                           'зарегистрирован!\n— Отлично!')
+                                           'зарегистрирован!\n\n— Отлично!')
     await state.clear()
