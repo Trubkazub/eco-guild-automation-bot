@@ -49,9 +49,11 @@ class Inserter:
 
     def choose_table(self):
         self.inserter('users_simple_info')
-        if self.data_['status'] == 'student':
+        if self.data_['status'] == 'Студент/Аспирант':
             self.inserter('student_info')
-        else:
+        elif self.data_['status'] == 'Выпускник':
+            self.inserter('graduate')
+        elif self.data_['status'] == 'Учащийся в школе':
             self.inserter('schoolkid_info')
 
 
