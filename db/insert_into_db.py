@@ -52,7 +52,7 @@ class Inserter:
         if self.data_['status'] == 'Студент/Аспирант':
             self.inserter('student_info')
         elif self.data_['status'] == 'Выпускник':
-            self.inserter('graduate')
+            self.inserter('graduate_info')
         elif self.data_['status'] == 'Учащийся в школе':
             self.inserter('schoolkid_info')
 
